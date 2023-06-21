@@ -5,6 +5,8 @@ VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinearRegression", "LinearRegression.csproj", "{BC7221E5-9035-4EE0-8E45-49D6057BCFCE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestingAppForLibrary", "..\TestingAppForLibrary\TestingAppForLibrary.csproj", "{B114FD11-D9DE-49C3-8DAB-F20C2D9C7EBD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{BC7221E5-9035-4EE0-8E45-49D6057BCFCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC7221E5-9035-4EE0-8E45-49D6057BCFCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BC7221E5-9035-4EE0-8E45-49D6057BCFCE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B114FD11-D9DE-49C3-8DAB-F20C2D9C7EBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B114FD11-D9DE-49C3-8DAB-F20C2D9C7EBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B114FD11-D9DE-49C3-8DAB-F20C2D9C7EBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B114FD11-D9DE-49C3-8DAB-F20C2D9C7EBD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
