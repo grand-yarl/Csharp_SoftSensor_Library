@@ -4,19 +4,34 @@ using System.Linq;
 
 namespace LinearRegression
 {
+    ///<summary>
+    /// OrdinaryLinearRegression is class, used for calculating linear model to predict output values
+    ///</summary>
     public class OrdinaryLinearRegression
     {
         private DoubleVector? RegressionCoefficients = null;
         private double? Bias = null;
         private int? number_of_singulars;
 
+        /// <summary>
+        /// Basic constructor for OrdinaryLinearRegression
+        /// </summary>
         public OrdinaryLinearRegression() : this(null) { }
         
+        /// <summary>
+        /// Constructor, that takes number of singular values
+        /// </summary>
+        /// <param name="number_of_singular_values">Number of singular values, used to build linear model</param>
         public OrdinaryLinearRegression(in int? number_of_singular_values)
         {
             this.number_of_singulars = number_of_singular_values;
         }
-
+        
+        /// <summary>
+        /// Method for calculating linear coeffitients of the model
+        /// </summary>
+        /// <param name="X">Matrix X of input parameters</param>
+        /// <param name="Y">Vector Y of output values</param>
         public void fit_model(in double[,] X, in double[] Y)
         {
             DoubleMatrix X_train = new DoubleMatrix(X);
@@ -42,6 +57,7 @@ namespace LinearRegression
             this.RegressionCoefficients = AllCofficients[WithoutLastElement];
             this.Bias = AllCofficients[AllCofficients.Length - 1];
 
+            //Function for calculating pseudo inverse matrix
             DoubleMatrix pseudo_inverse(DoubleMatrix M)
             {
                 var svds = new DoubleSVDecompServer();
@@ -68,6 +84,10 @@ namespace LinearRegression
             }
         }
 
+        /// <summary>
+        /// Method, that returns regression coefficients if they are calculated
+        /// </summary>
+        /// <returns>Regression coefficients for input parameters</returns>
         public double[]? getRegressionCoefficients
         {
             get
@@ -85,6 +105,10 @@ namespace LinearRegression
             }
         }
 
+        /// <summary>
+        /// Method, that returns bias value of linear model
+        /// </summary>
+        /// <returns>Bias value</returns>
         public double? getBias
         {
             get
@@ -101,6 +125,11 @@ namespace LinearRegression
             }
         }
 
+        /// <summary>
+        /// Method, that uses linear coefficients to predict new values for input parameters
+        /// </summary>
+        /// <param name="X">Matrix X of input parameters for prediction</param>
+        /// <returns>Vector Y of predicted values</returns>
         public double[]? predict(in double[,] X)
         {
             if ((this.RegressionCoefficients is null) || (this.Bias is null))
@@ -112,11 +141,6 @@ namespace LinearRegression
             DoubleVector BiasVector = new DoubleVector(X_test.Rows, (double)this.Bias, 0);
             return (NMathFunctions.Product(X_test, this.RegressionCoefficients) + BiasVector).ToArray();
         }
-
-
-
-
-
     }
 }
 
