@@ -146,13 +146,23 @@ namespace LinearRegression
 
 namespace ComponentAnalysis
 {
+    /// <summary>
+    /// PCA - Principal components analysis ia a class, used to calculate new orthogonal basis, expaining most of data variances
+    /// </summary>
     public class PCA
     {
         private DoubleMatrix? PCA_vectors = null;
         private DoubleVector? PCA_values = null;
 
+        /// <summary>
+        /// Basic constructor of PCA
+        /// </summary>
         public PCA() { }
 
+        /// <summary>
+        /// Method, that is used to calculate principal components and loadings
+        /// </summary>
+        /// <param name="X">Analized data matrix X</param>
         public void Analize(double[,] X)
         {
             DoubleMatrix X_analized = new DoubleMatrix(X);
@@ -189,11 +199,13 @@ namespace ComponentAnalysis
                     this.PCA_vectors[i, j] = eigen_decomposition.EigenVectors[j, size - i - 1];
                 }
             }
-
-            Console.WriteLine(this.PCA_values);
-            Console.WriteLine(this.PCA_vectors);
         }
 
+        /// <summary>
+        /// Method, that returns singular values of analized data, sorted from biggest to smallest
+        /// </summary>
+        /// <param name="number_of_singulars">Number of singular values</param>
+        /// <returns>Singular values of analized data</returns>
         public double[]? GetSingularValues(int number_of_singulars = -1)
         {
             if (this.PCA_values is null)
@@ -218,7 +230,12 @@ namespace ComponentAnalysis
             }
         }
 
-        public double? ExplainedVarianceRatio(int number_of_singulars = -1)
+        /// <summary>
+        /// Method, that returns the persentage of explained variance by first principal components
+        /// </summary>
+        /// <param name="number_of_components">Number of principal components</param>
+        /// <returns>Persentage of explained variance</returns>
+        public double? ExplainedVarianceRatio(int number_of_components = -1)
         {
             if (this.PCA_values is null)
             {
@@ -227,36 +244,41 @@ namespace ComponentAnalysis
             }
             else
             {
-                if ((number_of_singulars < 0) || (number_of_singulars > PCA_values.Length))
+                if ((number_of_components < 0) || (number_of_components > PCA_values.Length))
                 {
-                    number_of_singulars = this.PCA_values.Length;
+                    number_of_components = this.PCA_values.Length;
                 }
 
-                Slice singular_value_slice = new Slice(0, number_of_singulars);
+                Slice singular_value_slice = new Slice(0, number_of_components);
                 double total = this.PCA_values.Sum();
                 double explained = this.PCA_values[singular_value_slice].Sum();
                 return explained / total * 100;
             }
         }
 
-        public double[]? EveryVectorVarianceRatio(int number_of_singulars = -1)
+        /// <summary>
+        /// Method, that returns the persentages, explained by each principal component
+        /// </summary>
+        /// <param name="number_of_components">Number of principal components</param>
+        /// <returns>Persentages of explained variance for each component</returns>
+        public double[]? EveryVectorVarianceRatio(int number_of_components = -1)
         {
             if (this.PCA_values is null)
             {
-                Console.WriteLine("The PCA model is not analized! Analize data before getting singular values using - PCA.Analize(double[,] X)");
+                Console.WriteLine("The PCA model is not analized! Analize data before getting principal components using - PCA.Analize(double[,] X)");
                 return null;
             }
             else
             {
-                if ((number_of_singulars < 0) || (number_of_singulars > PCA_values.Length))
+                if ((number_of_components < 0) || (number_of_components > PCA_values.Length))
                 {
-                    number_of_singulars = this.PCA_values.Length;
+                    number_of_components = this.PCA_values.Length;
                 }
 
-                Slice singular_value_slice = new Slice(0, number_of_singulars);
+                Slice singular_value_slice = new Slice(0, number_of_components);
                 double total = this.PCA_values.Sum();
-                double[] vector_explaination = new double[number_of_singulars];
-                for (int i = 0; i < number_of_singulars; i++)
+                double[] vector_explaination = new double[number_of_components];
+                for (int i = 0; i < number_of_components; i++)
                 {
                     vector_explaination[i] = this.PCA_values[i] / total;
                 }
@@ -264,9 +286,14 @@ namespace ComponentAnalysis
             }
         }
 
+        /// <summary>
+        /// Method, that returns first principal components, sorted by their importance
+        /// </summary>
+        /// <param name="number_of_components">Number of principal components</param>
+        /// <returns>Principal components</returns>
         public double[,]? GetPrincipalComponents(int number_of_components = -1)
         {
-            if (this.PCA_vectors is null)
+            if ((this.PCA_vectors is null) || (this.PCA_values is null))
             {
                 Console.WriteLine("The PCA model is not analized! Analize data before getting singular values using - PCA.Analize(double[,] X)");
                 return null;
