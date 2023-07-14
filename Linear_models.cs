@@ -1,6 +1,7 @@
 ﻿using CenterSpace.NMath.Core;
 using System;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace LinearRegression
 {
@@ -9,8 +10,8 @@ namespace LinearRegression
     ///</summary>
     public class OrdinaryLinearRegression
     {
-        private DoubleVector? RegressionCoefficients = null;
-        private double? Bias = null;
+        private protected DoubleVector? RegressionCoefficients = null;
+        private protected double? Bias = null;
         private int? number_of_singulars;
 
         /// <summary>
@@ -32,12 +33,10 @@ namespace LinearRegression
         /// </summary>
         /// <param name="X">Matrix X of input parameters</param>
         /// <param name="Y">Vector Y of output values</param>
-        public void Fit_model(in double[,] X, in double[] Y)
+        public virtual void Fit_model(in double[,] X, in double[] Y)
         {
             DoubleMatrix X_train = new DoubleMatrix(X);
             DoubleVector Y_train = new DoubleVector(Y);
-
-            this.RegressionCoefficients = new DoubleVector(X_train.Cols + 1);
 
             DoubleMatrix X_new = new DoubleMatrix(X_train.Rows, X_train.Cols + 1, 1, 0);
             for (int i = 0; i < X_train.Rows; i++)
@@ -51,14 +50,14 @@ namespace LinearRegression
             DoubleMatrix X_pseudo_inverse = new DoubleMatrix(X_train.Rows, X_train.Cols + 1);
             X_pseudo_inverse = pseudo_inverse(X_new);
 
-            DoubleVector AllCofficients = NMathFunctions.Product(X_pseudo_inverse, Y_train);
-            Slice WithoutLastElement = new Slice(0, AllCofficients.Length - 1);
+            DoubleVector AllCoefficients = NMathFunctions.Product(X_pseudo_inverse, Y_train);
+            Slice WithoutLastElement = new Slice(0, AllCoefficients.Length - 1);
 
-            this.RegressionCoefficients = AllCofficients[WithoutLastElement];
-            this.Bias = AllCofficients[AllCofficients.Length - 1];
+            this.RegressionCoefficients = AllCoefficients[WithoutLastElement];
+            this.Bias = AllCoefficients[AllCoefficients.Length - 1];
 
             //Function for calculating pseudo inverse matrix
-            DoubleMatrix pseudo_inverse(DoubleMatrix M)
+            DoubleMatrix pseudo_inverse(in DoubleMatrix M)
             {
                 var svds = new DoubleSVDecompServer();
                 svds.ComputeFull = true;
@@ -141,6 +140,100 @@ namespace LinearRegression
             DoubleVector BiasVector = new DoubleVector(X_test.Rows, (double)this.Bias, 0);
             return (NMathFunctions.Product(X_test, this.RegressionCoefficients) + BiasVector).ToArray();
         }
+    }
+
+
+    public class GradientLinearRegression : OrdinaryLinearRegression
+    {
+        private double tolerance = 0.1;
+        private double gradient_rate = 0.001;
+        private double delta = 0.001;
+
+        public GradientLinearRegression() : base() { }
+
+        public GradientLinearRegression(double tolerance)
+        {
+            this.tolerance = tolerance;
+        }
+
+        public GradientLinearRegression(double tolerance, double gradient_rate) : this(tolerance)
+        {
+            this.gradient_rate = gradient_rate;
+        }
+
+        public GradientLinearRegression(double tolerance, double gradient_rate, double delta) : this(tolerance, gradient_rate)
+        {
+            this.delta = delta;
+        }
+
+        public override void Fit_model(in double[,] X, in double[] Y)
+        {
+            DoubleMatrix X_train = new DoubleMatrix(X);
+            DoubleVector Y_train = new DoubleVector(Y);
+
+            DoubleVector AllCoefficients = new DoubleVector(X_train.Cols + 1, 0, 0);
+
+            DoubleVector gradient_vector;
+
+            for (ulong i = 0; i < 10e100; i++)
+            {
+                gradient_vector = gradient(X_train, Y_train, AllCoefficients);
+                
+                if (NMathFunctions.AbsSum(gradient_vector) < this.tolerance)
+                {
+                    break;
+                }
+                AllCoefficients = AllCoefficients - this.gradient_rate*gradient_vector;
+            }
+
+            Slice WithoutLastElement = new Slice(0, AllCoefficients.Length - 1);
+
+            this.RegressionCoefficients = AllCoefficients[WithoutLastElement];
+            this.Bias = AllCoefficients[AllCoefficients.Length - 1];
+
+
+
+            DoubleVector gradient(in DoubleMatrix X, in DoubleVector Y, in DoubleVector Coefficients)
+            {
+                DoubleVector gradient_vector = new DoubleVector(X_train.Cols + 1);
+                DoubleVector plusdeltaCoefficients = new DoubleVector(Coefficients);
+                DoubleVector minusdeltaCoefficients = new DoubleVector(Coefficients);
+                for (int i = 0; i < Coefficients.Length; i++)
+                {
+                    
+                    plusdeltaCoefficients[i] += this.delta;
+                    if (i > 0)
+                    {
+                        plusdeltaCoefficients[i - 1] -= this.delta;
+                    }
+                    minusdeltaCoefficients[i] -= this.delta;
+                    if (i > 0)
+                    {
+                        minusdeltaCoefficients[i - 1] += this.delta;
+                    }
+
+                    gradient_vector[i] = (square_error(X, Y, plusdeltaCoefficients) - square_error(X, Y, minusdeltaCoefficients)) / this.delta;
+
+                }
+                
+                return gradient_vector;
+            }
+
+            double square_error(in DoubleMatrix X, in DoubleVector Y, in DoubleVector AllCoefficients)
+            {
+                Slice WithoutLastElement = new Slice(0, AllCoefficients.Length - 1);
+
+                DoubleVector regressioncoefficients = AllCoefficients[WithoutLastElement];
+                double bias = AllCoefficients[AllCoefficients.Length - 1];
+                DoubleVector BiasVector = new DoubleVector(X.Rows, bias, 0);
+
+                DoubleVector full_error = (NMathFunctions.Product(X, regressioncoefficients) + BiasVector) - Y;
+
+                return NMathFunctions.Dot(full_error, full_error);
+        }
+
+        }
+
     }
 }
 
