@@ -22,10 +22,10 @@ namespace LinearRegression
         /// <summary>
         /// Constructor, that takes number of singular values
         /// </summary>
-        /// <param name="number_of_singular_values">Number of singular values, used to build linear model</param>
-        public OrdinaryLinearRegression(in int? number_of_singular_values)
+        /// <param name="set_number_of_singulars">Number of singular values, used to build linear model</param>
+        public OrdinaryLinearRegression(in int? set_number_of_singulars)
         {
-            this.number_of_singulars = number_of_singular_values;
+            this.number_of_singulars = set_number_of_singulars;
         }
         
         /// <summary>
@@ -151,19 +151,19 @@ namespace LinearRegression
 
         public GradientLinearRegression() : base() { }
 
-        public GradientLinearRegression(double tolerance)
+        public GradientLinearRegression(double set_tolerance)
         {
-            this.tolerance = tolerance;
+            this.tolerance = set_tolerance;
         }
 
-        public GradientLinearRegression(double tolerance, double gradient_rate) : this(tolerance)
+        public GradientLinearRegression(double set_tolerance, double set_gradient_rate) : this(set_tolerance)
         {
-            this.gradient_rate = gradient_rate;
+            this.gradient_rate = set_gradient_rate;
         }
 
-        public GradientLinearRegression(double tolerance, double gradient_rate, double delta) : this(tolerance, gradient_rate)
+        public GradientLinearRegression(double set_tolerance, double set_gradient_rate, double set_delta) : this(set_tolerance, set_gradient_rate)
         {
-            this.delta = delta;
+            this.delta = set_delta;
         }
 
         public override void Fit_model(in double[,] X, in double[] Y)
@@ -175,9 +175,9 @@ namespace LinearRegression
 
             DoubleVector gradient_vector;
 
-            for (ulong i = 0; i < 10e100; i++)
+            for (ulong i = 0; i < 10e10; i++)
             {
-                gradient_vector = gradient(X_train, Y_train, AllCoefficients);
+                gradient_vector = this.gradient(X_train, Y_train, AllCoefficients);
                 
                 if (NMathFunctions.AbsSum(gradient_vector) < this.tolerance)
                 {
@@ -191,49 +191,116 @@ namespace LinearRegression
             this.RegressionCoefficients = AllCoefficients[WithoutLastElement];
             this.Bias = AllCoefficients[AllCoefficients.Length - 1];
 
+        }
 
-
-            DoubleVector gradient(in DoubleMatrix X, in DoubleVector Y, in DoubleVector Coefficients)
+        private DoubleVector gradient(in DoubleMatrix X, in DoubleVector Y, in DoubleVector Coefficients)
+        {
+            DoubleVector gradient_vector = new DoubleVector(X.Cols + 1);
+            DoubleVector plusdeltaCoefficients = new DoubleVector(Coefficients);
+            DoubleVector minusdeltaCoefficients = new DoubleVector(Coefficients);
+            for (int i = 0; i < Coefficients.Length; i++)
             {
-                DoubleVector gradient_vector = new DoubleVector(X_train.Cols + 1);
-                DoubleVector plusdeltaCoefficients = new DoubleVector(Coefficients);
-                DoubleVector minusdeltaCoefficients = new DoubleVector(Coefficients);
-                for (int i = 0; i < Coefficients.Length; i++)
+
+                plusdeltaCoefficients[i] += this.delta;
+                if (i > 0)
                 {
-                    
-                    plusdeltaCoefficients[i] += this.delta;
-                    if (i > 0)
-                    {
-                        plusdeltaCoefficients[i - 1] -= this.delta;
-                    }
-                    minusdeltaCoefficients[i] -= this.delta;
-                    if (i > 0)
-                    {
-                        minusdeltaCoefficients[i - 1] += this.delta;
-                    }
-
-                    gradient_vector[i] = (square_error(X, Y, plusdeltaCoefficients) - square_error(X, Y, minusdeltaCoefficients)) / this.delta;
-
+                    plusdeltaCoefficients[i - 1] -= this.delta;
                 }
-                
-                return gradient_vector;
+                minusdeltaCoefficients[i] -= this.delta;
+                if (i > 0)
+                {
+                    minusdeltaCoefficients[i - 1] += this.delta;
+                }
+
+                gradient_vector[i] = (this.square_error(X, Y, plusdeltaCoefficients) - this.square_error(X, Y, minusdeltaCoefficients)) / this.delta;
             }
 
-            double square_error(in DoubleMatrix X, in DoubleVector Y, in DoubleVector AllCoefficients)
-            {
-                Slice WithoutLastElement = new Slice(0, AllCoefficients.Length - 1);
-
-                DoubleVector regressioncoefficients = AllCoefficients[WithoutLastElement];
-                double bias = AllCoefficients[AllCoefficients.Length - 1];
-                DoubleVector BiasVector = new DoubleVector(X.Rows, bias, 0);
-
-                DoubleVector full_error = (NMathFunctions.Product(X, regressioncoefficients) + BiasVector) - Y;
-
-                return NMathFunctions.Dot(full_error, full_error);
+            return gradient_vector;
         }
 
+        private protected virtual double square_error(in DoubleMatrix X, in DoubleVector Y, in DoubleVector AllCoefficients)
+        {
+            Slice WithoutLastElement = new Slice(0, AllCoefficients.Length - 1);
+
+            DoubleVector regressioncoefficients = AllCoefficients[WithoutLastElement];
+            double bias = AllCoefficients[AllCoefficients.Length - 1];
+            DoubleVector BiasVector = new DoubleVector(X.Rows, bias, 0);
+
+            DoubleVector full_error = (NMathFunctions.Product(X, regressioncoefficients) + BiasVector) - Y;
+
+            return NMathFunctions.Dot(full_error, full_error);
+        }
+    }
+
+    public class LassoLinearRegression : GradientLinearRegression
+    {
+        private protected double lasso = 0;
+
+        public LassoLinearRegression(double set_lasso = 0, double set_tolerance = 0.1, double set_gradient_rate = 0.001, double set_delta = 0.001) : base(set_tolerance, set_gradient_rate, set_delta)
+        {
+            this.lasso = set_lasso;
         }
 
+        private protected override double square_error(in DoubleMatrix X, in DoubleVector Y, in DoubleVector AllCoefficients)
+        {
+            Slice WithoutLastElement = new Slice(0, AllCoefficients.Length - 1);
+
+            DoubleVector regressioncoefficients = AllCoefficients[WithoutLastElement];
+            double bias = AllCoefficients[AllCoefficients.Length - 1];
+            DoubleVector BiasVector = new DoubleVector(X.Rows, bias, 0);
+
+            DoubleVector full_error = (NMathFunctions.Product(X, regressioncoefficients) + BiasVector) - Y;
+
+            return NMathFunctions.Dot(full_error, full_error) + this.lasso * NMathFunctions.AbsSum(regressioncoefficients);
+        }
+
+    }
+
+    public class RidgeLinearRegression : GradientLinearRegression
+    {
+        private protected double ridge = 0;
+
+        public RidgeLinearRegression(double set_ridge = 0, double set_tolerance = 0.1, double set_gradient_rate=0.001, double set_delta=0.001) : base(set_tolerance, set_gradient_rate, set_delta)
+        {
+            this.ridge = set_ridge;
+        }
+
+        private protected override double square_error(in DoubleMatrix X, in DoubleVector Y, in DoubleVector AllCoefficients)
+        {
+            Slice WithoutLastElement = new Slice(0, AllCoefficients.Length - 1);
+
+            DoubleVector regressioncoefficients = AllCoefficients[WithoutLastElement];
+            double bias = AllCoefficients[AllCoefficients.Length - 1];
+            DoubleVector BiasVector = new DoubleVector(X.Rows, bias, 0);
+
+            DoubleVector full_error = (NMathFunctions.Product(X, regressioncoefficients) + BiasVector) - Y;
+
+            return NMathFunctions.Dot(full_error, full_error) + this.ridge * NMathFunctions.Dot(regressioncoefficients, regressioncoefficients);
+        }
+
+    }
+
+    public class ElasticNetLinearRegression : LassoLinearRegression 
+    {
+        private protected double ridge = 0;
+
+        public ElasticNetLinearRegression(double set_ridge = 0, double set_lasso = 0, double set_tolerance = 0.1, double set_gradient_rate = 0.001, double set_delta = 0.001) : base(set_lasso, set_tolerance, set_gradient_rate, set_delta)
+        {
+            this.ridge = set_ridge;
+        }
+
+        private protected override double square_error(in DoubleMatrix X, in DoubleVector Y, in DoubleVector AllCoefficients)
+        {
+            Slice WithoutLastElement = new Slice(0, AllCoefficients.Length - 1);
+
+            DoubleVector regressioncoefficients = AllCoefficients[WithoutLastElement];
+            double bias = AllCoefficients[AllCoefficients.Length - 1];
+            DoubleVector BiasVector = new DoubleVector(X.Rows, bias, 0);
+
+            DoubleVector full_error = (NMathFunctions.Product(X, regressioncoefficients) + BiasVector) - Y;
+
+            return NMathFunctions.Dot(full_error, full_error) + this.lasso * NMathFunctions.AbsSum(regressioncoefficients) + this.ridge * NMathFunctions.Dot(regressioncoefficients, regressioncoefficients);
+        }
     }
 }
 
